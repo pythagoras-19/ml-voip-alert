@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML VoIP Alert System - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.1rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        .card h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e8ed;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: linear-gradient(135deg, #2980b9, #1f4e79);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .result-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-top: 30px;
+            display: none;
+        }
+
+        .risk-score {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .risk-value {
+            font-size: 4rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .risk-high { color: #e74c3c; }
+        .risk-medium { color: #f39c12; }
+        .risk-low { color: #27ae60; }
+
+        .risk-label {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .alert-badge {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            display: inline-block;
+            margin: 20px 0;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .factors {
+            margin-top: 20px;
+        }
+
+        .factor-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .factor-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .factor-impact {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success {
+            background: #27ae60;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 ML VoIP Alert System</h1>
+            <p>Cardiac Risk Prediction & Alert Management</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalAssessments">0</div>
+                <div class="stat-label">Total Assessments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="alertsTriggered">0</div>
+                <div class="stat-label">Alerts Triggered</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="avgRiskScore">0%</div>
+                <div class="stat-label">Avg Risk Score</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="systemStatus">🟢</div>
+                <div class="stat-label">System Status</div>
+            </div>
+        </div>
+
+        <div class="dashboard">
+            <div class="card">
+                <h2>🔍 Patient Risk Assessment</h2>
+                <form id="assessmentForm">
+                    <div class="form-group">
+                        <label for="patientToken">Patient Reference Token</label>
+                        <input type="text" id="patientToken" name="patientToken" placeholder="e.g., patient_12345" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" min="1" max="120" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sex">Sex</label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select...</option>
+                            <option value="0">Female</option>
+                            <option value="1">Male</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cp">Chest Pain Type</label>
+                        <select id="cp" name="cp" required>
+                            <option value="">Select...</option>
+                            <option value="0">Typical Angina</option>
+                            <option value="1">Atypical Angina</option>
+                            <option value="2">Non-anginal Pain</option>
+                            <option value="3">Asymptomatic</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="trestbps">Resting Blood Pressure (mm Hg)</label>
+                        <input type="number" id="trestbps" name="trestbps" min="50" max="300" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="chol">Cholesterol (mg/dl)</label>
+                        <input type="number" id="chol" name="chol" min="100" max="600" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fbs">Fasting Blood Sugar > 120 mg/dl</label>
+                        <select id="fbs" name="fbs" required>
+                            <option value="">Select...</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="restecg">Resting ECG</label>
+                        <select id="restecg" name="restecg" required>
+                            <option value="">Select...</option>
+                            <option value="0">Normal</option>
+                            <option value="1">ST-T Wave Abnormality</option>
+                            <option value="2">Left Ventricular Hypertrophy</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="thalach">Maximum Heart Rate Achieved</label>
+                        <input type="number" id="thalach" name="thalach" min="60" max="220" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="exang">Exercise Induced Angina</label>
+                        <select id="exang" name="exang" required>
+                            <option value="">Select...</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="oldpeak">ST Depression Induced by Exercise</label>
+                        <input type="number" id="oldpeak" name="oldpeak" min="0" max="10" step="0.1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="slope">Slope of Peak Exercise ST Segment</label>
+                        <select id="slope" name="slope" required>
+                            <option value="">Select...</option>
+                            <option value="0">Upsloping</option>
+                            <option value="1">Flat</option>
+                            <option value="2">Downsloping</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ca">Number of Major Vessels</label>
+                        <select id="ca" name="ca" required>
+                            <option value="">Select...</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="thal">Thalassemia</label>
+                        <select id="thal" name="thal" required>
+                            <option value="">Select...</option>
+                            <option value="0">Normal</option>
+                            <option value="1">Fixed Defect</option>
+                            <option value="2">Reversible Defect</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn" id="sampleDataBtn" style="background: linear-gradient(135deg, #27ae60, #229954); margin-bottom: 10px;">
+                        📋 Load Sample Data
+                    </button>
+                    <button type="submit" class="btn" id="submitBtn">
+                        🚀 Assess Patient Risk
+                    </button>
+                </form>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Analyzing patient data...</p>
+                </div>
+
+                <div class="error" id="error"></div>
+                <div class="success" id="success"></div>
+            </div>
+
+            <div class="card">
+                <h2>📊 Recent Assessments</h2>
+                <div id="recentAssessments">
+                    <p style="color: #7f8c8d; text-align: center; padding: 40px;">
+                        No assessments yet. Submit a patient assessment to see results here.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-card" id="resultCard">
+            <h2>📋 Assessment Results</h2>
+            <div class="risk-score">
+                <div class="risk-value" id="riskValue">0%</div>
+                <div class="risk-label" id="riskLabel">Risk Score</div>
+            </div>
+            
+            <div id="alertSection" style="display: none;">
+                <div class="alert-badge">🚨 ALERT TRIGGERED</div>
+                <p><strong>Alert ID:</strong> <span id="alertId"></span></p>
+                <p><strong>Patient Token:</strong> <span id="patientTokenResult"></span></p>
+            </div>
+
+            <div class="factors" id="factorsSection">
+                <h3>🔍 Top Contributing Factors</h3>
+                <div id="factorsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let totalAssessments = 0;
+        let alertsTriggered = 0;
+        let totalRiskScore = 0;
+
+        // Load system status on page load
+        window.addEventListener('load', async () => {
+            await checkSystemStatus();
+        });
+
+        // Sample data button
+        document.getElementById('sampleDataBtn').addEventListener('click', () => {
+            document.getElementById('patientToken').value = 'patient_' + Math.random().toString(36).substr(2, 9);
+            document.getElementById('age').value = '65';
+            document.getElementById('sex').value = '1';
+            document.getElementById('cp').value = '3';
+            document.getElementById('trestbps').value = '145';
+            document.getElementById('chol').value = '233';
+            document.getElementById('fbs').value = '1';
+            document.getElementById('restecg').value = '0';
+            document.getElementById('thalach').value = '150';
+            document.getElementById('exang').value = '0';
+            document.getElementById('oldpeak').value = '2.3';
+            document.getElementById('slope').value = '0';
+            document.getElementById('ca').value = '0';
+            document.getElementById('thal').value = '1';
+        });
+
+        async function checkSystemStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                const statusElement = document.getElementById('systemStatus');
+                if (data.model_loaded) {
+                    statusElement.textContent = '🟢';
+                    statusElement.title = 'System Online - Model Loaded';
+                } else {
+                    statusElement.textContent = '🟡';
+                    statusElement.title = 'System Online - Model Not Loaded';
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('systemStatus');
+                statusElement.textContent = '🔴';
+                statusElement.title = 'System Offline';
+            }
+        }
+
+        document.getElementById('assessmentForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const success = document.getElementById('success');
+            const resultCard = document.getElementById('resultCard');
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            error.style.display = 'none';
+            success.style.display = 'none';
+            resultCard.style.display = 'none';
+            
+            try {
+                // Collect form data
+                const formData = new FormData(e.target);
+                const features = {};
+                
+                // Convert form data to features object
+                for (let [key, value] of formData.entries()) {
+                    if (key !== 'patientToken') {
+                        features[key] = parseFloat(value);
+                    }
+                }
+                
+                const requestData = {
+                    patient_ref_token: formData.get('patientToken'),
+                    features: features
+                };
+                
+                // Send request to API
+                const response = await fetch('/score', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                // Update stats
+                totalAssessments++;
+                totalRiskScore += result.risk;
+                if (result.alerted) {
+                    alertsTriggered++;
+                }
+                
+                updateStats();
+                displayResults(result);
+                addToRecentAssessments(result);
+                
+                success.textContent = 'Assessment completed successfully!';
+                success.style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                error.textContent = `Error: ${error.message}`;
+                error.style.display = 'block';
+            } finally {
+                // Hide loading state
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+        
+        function updateStats() {
+            document.getElementById('totalAssessments').textContent = totalAssessments;
+            document.getElementById('alertsTriggered').textContent = alertsTriggered;
+            document.getElementById('avgRiskScore').textContent = 
+                totalAssessments > 0 ? Math.round((totalRiskScore / totalAssessments) * 100) + '%' : '0%';
+        }
+        
+        function displayResults(result) {
+            const resultCard = document.getElementById('resultCard');
+            const riskValue = document.getElementById('riskValue');
+            const riskLabel = document.getElementById('riskLabel');
+            const alertSection = document.getElementById('alertSection');
+            const alertId = document.getElementById('alertId');
+            const patientTokenResult = document.getElementById('patientTokenResult');
+            const factorsList = document.getElementById('factorsList');
+            
+            // Display risk score
+            const riskPercent = Math.round(result.risk * 100);
+            riskValue.textContent = riskPercent + '%';
+            
+            // Set risk level styling
+            riskValue.className = 'risk-value';
+            if (riskPercent >= 80) {
+                riskValue.classList.add('risk-high');
+                riskLabel.textContent = 'HIGH RISK';
+            } else if (riskPercent >= 50) {
+                riskValue.classList.add('risk-medium');
+                riskLabel.textContent = 'MEDIUM RISK';
+            } else {
+                riskValue.classList.add('risk-low');
+                riskLabel.textContent = 'LOW RISK';
+            }
+            
+            // Display alert information
+            if (result.alerted) {
+                alertSection.style.display = 'block';
+                alertId.textContent = result.alert_id || 'N/A';
+                patientTokenResult.textContent = result.patient_ref_token;
+            } else {
+                alertSection.style.display = 'none';
+            }
+            
+            // Display factors
+            factorsList.innerHTML = '';
+            if (result.top_factors && result.top_factors.length > 0) {
+                result.top_factors.forEach(factor => {
+                    const factorDiv = document.createElement('div');
+                    factorDiv.className = 'factor-item';
+                    factorDiv.innerHTML = `
+                        <span class="factor-name">${factor.feature}</span>
+                        <span class="factor-impact">${factor.impact.toFixed(3)}</span>
+                    `;
+                    factorsList.appendChild(factorDiv);
+                });
+            } else {
+                factorsList.innerHTML = '<p style="color: #7f8c8d; text-align: center;">No factor analysis available</p>';
+            }
+            
+            resultCard.style.display = 'block';
+            resultCard.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function addToRecentAssessments(result) {
+            const container = document.getElementById('recentAssessments');
+            
+            // Clear "no assessments" message
+            if (container.querySelector('p')) {
+                container.innerHTML = '';
+            }
+            
+            const assessmentDiv = document.createElement('div');
+            assessmentDiv.className = 'factor-item';
+            assessmentDiv.style.marginBottom = '10px';
+            
+            const riskPercent = Math.round(result.risk * 100);
+            const riskClass = riskPercent >= 80 ? 'risk-high' : riskPercent >= 50 ? 'risk-medium' : 'risk-low';
+            
+            assessmentDiv.innerHTML = `
+                <div>
+                    <strong>${result.patient_ref_token}</strong>
+                    <br>
+                    <small>${new Date().toLocaleString()}</small>
+                </div>
+                <div style="text-align: right;">
+                    <span class="${riskClass}" style="font-size: 1.2rem; font-weight: bold;">${riskPercent}%</span>
+                    ${result.alerted ? '<br><span style="color: #e74c3c; font-size: 0.8rem;">🚨 ALERT</span>' : ''}
+                </div>
+            `;
+            
+            container.insertBefore(assessmentDiv, container.firstChild);
+            
+            // Keep only last 5 assessments
+            while (container.children.length > 5) {
+                container.removeChild(container.lastChild);
+            }
+        }
+    </script>
+</body>
+</html>

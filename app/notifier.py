@@ -28,7 +28,7 @@ class VoIPNotifier:
 
     def notify_voice(self, alert: AlertData) -> bool:
         """
-        Send voice alert via Asterisk AMI.
+        Send voice alert via Asterisk AMI or simulator.
         
         Args:
             alert: Alert data containing risk information
@@ -37,8 +37,7 @@ class VoIPNotifier:
             True if alert was sent successfully, False otherwise
         """
         if not self.ami_available:
-            logger.info(f"Voice alert simulated for case {alert.alert_id}")
-            return True
+            return self._simulate_voice_alert(alert)
         
         try:
             # Create short ID for the alert
@@ -103,6 +102,43 @@ class VoIPNotifier:
             if b"\r\n\r\n" in response:
                 break
         return response.decode('utf-8', errors='ignore')
+    
+    def _simulate_voice_alert(self, alert: AlertData) -> bool:
+        """Simulate voice alert using system TTS"""
+        try:
+            import subprocess
+            import platform
+            
+            # Create short ID for the alert
+            short_id = alert.alert_id[-6:]  # Last 6 characters
+            
+            # Create TTS message (PHI-free)
+            message = f"High-risk cardiac score for case {short_id}. Check your secure portal."
+            
+            logger.info(f"📞 SIMULATED VOIP CALL")
+            logger.info(f"   📱 To: {self.alert_number or 'Unknown'}")
+            logger.info(f"   💬 Message: {message}")
+            
+            # Use system TTS if available
+            if platform.system() == "Darwin":  # macOS
+                try:
+                    subprocess.run([
+                        "say", 
+                        "-v", "Alex",
+                        "-r", "150",
+                        message
+                    ], timeout=10, check=True)
+                    logger.info("   ✅ Voice message played successfully")
+                except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+                    logger.info("   📢 Text-to-speech not available")
+            else:
+                logger.info("   📢 Text-to-speech not available on this system")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Voice simulation failed: {e}")
+            return False
 
 
 # Global notifier instance

@@ -150,9 +150,15 @@ async def health_check():
     return {"status": "healthy", "model_loaded": get_model() is not None}
 
 
-@app.get("/")
-async def root():
-    """Root endpoint with API information"""
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    """Main dashboard interface"""
+    return templates.TemplateResponse("dashboard.html", {"request": request})
+
+
+@app.get("/api")
+async def api_info():
+    """API information endpoint"""
     return {
         "message": "ML VoIP Alert System",
         "version": "1.0.0",
@@ -160,6 +166,6 @@ async def root():
             "POST /score": "Score patient for cardiac risk",
             "GET /case/{token}": "View case details",
             "GET /health": "Health check",
-            "GET /": "This information"
+            "GET /api": "This information"
         }
     }
