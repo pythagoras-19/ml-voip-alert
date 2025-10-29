@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cardiac Risk Alert - Case {{token}}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .risk-score {
+            font-size: 2em;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 20px 0;
+        }
+        .risk-high {
+            color: #e74c3c;
+        }
+        .risk-medium {
+            color: #f39c12;
+        }
+        .risk-low {
+            color: #27ae60;
+        }
+        .factors {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .factor-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .factor-item:last-child {
+            border-bottom: none;
+        }
+        .factor-name {
+            font-weight: bold;
+        }
+        .factor-impact {
+            color: #6c757d;
+        }
+        .timestamp {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-top: 20px;
+        }
+        .alert-badge {
+            background-color: #e74c3c;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            display: inline-block;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Cardiac Risk Assessment</h1>
+            <p><strong>Case Token:</strong> {{token}}</p>
+            {% if alerted %}
+            <span class="alert-badge">ALERT TRIGGERED</span>
+            {% endif %}
+        </div>
+        
+        <div class="risk-score {{ 'risk-high' if risk >= 0.8 else 'risk-medium' if risk >= 0.5 else 'risk-low' }}">
+            Risk Score: {{ "%.1f"|format(risk * 100) }}%
+        </div>
+        
+        {% if top_factors %}
+        <div class="factors">
+            <h3>Top Contributing Factors:</h3>
+            <ul style="list-style: none; padding: 0;">
+                {% for factor in top_factors %}
+                <li class="factor-item">
+                    <span class="factor-name">{{ factor.feature }}</span>
+                    <span class="factor-impact">Impact: {{ "%.2f"|format(factor.impact) }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="factors">
+            <p><em>No factor analysis available for this case.</em></p>
+        </div>
+        {% endif %}
+        
+        <div class="timestamp">
+            <strong>Generated:</strong> {{ timestamp }}
+        </div>
+        
+        {% if alert_id %}
+        <div class="timestamp">
+            <strong>Alert ID:</strong> {{ alert_id }}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>
